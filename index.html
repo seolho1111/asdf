@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-     <title>fuck test is coming</title>
+     <title>test is coming</title>
      <meta charset="utf-8">
     <meta name="description" content="서울삼육중학교 개 좆같네">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -49,7 +49,7 @@
       <p>
     
            </p>      <p style="text-align: center;">        <a href="https://www.youtube.com/shorts/YEhDlkBl_D0" style="font-size: 32px; display: inline-block;">
-          최은숙(씨발련)
+          ㅊㅇㅅ(ㅅㅂㄹ)
         </a>
       </p>
       <div class="card" style="margin-top:20px;">
@@ -74,6 +74,7 @@
     <!-- 상단 중복 문구 제거됨 -->
         <script>
         (function(){
+          const API_BASE = 'https://asdf-1-9s27.onrender.com';
           const form = document.getElementById('commentForm');
           const nameInput = document.getElementById('name');
           const contentInput = document.getElementById('content');
@@ -94,7 +95,7 @@
           // 댓글 로드 (응답이 JSON이 아닐 때 친절하게 처리)
           async function loadComments(){
             try{
-              const res = await fetch('/api/comments');
+              const res = await fetch(API_BASE + '/api/comments');
               const ct = res.headers.get('content-type') || '';
               if(!res.ok){
                 const text = await res.text();
@@ -118,7 +119,7 @@
             form.addEventListener('submit', async (e)=>{
               e.preventDefault();
               try{
-                const res = await fetch('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
+                const res = await fetch(API_BASE + '/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
                 const ct = res.headers.get('content-type') || '';
                 if(!res.ok){
                   const text = await res.text();
@@ -165,7 +166,7 @@
        하고싶은말 다 남기세요
       </p>
       <p>
-        (주)타코마신호드림치과 ㅣ 문의:010-5534-7351
+        (주)현대자동차그룹 ㅣ 문의:010-5534-7351
       </p>
     </div>
    </body>
