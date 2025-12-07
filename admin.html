@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>관리자 페이지</title>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&family=Poppins&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Poppins, 'Noto Sans KR', sans-serif;
+      background-color: #f5f5f5;
+    }
+    
+    .header {
+      background-color: #703fda;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    
+    .login-section {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .login-section h2 {
+      color: #703fda;
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #2e2e2e;
+      font-weight: bold;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #7844e8;
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    
+    button:hover {
+      background-color: #6a3acc;
+    }
+    
+    .admin-panel {
+      display: none;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    
+    .tab-button {
+      padding: 10px 20px;
+      background-color: #ddd;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .tab-button.active {
+      background-color: #7844e8;
+      color: #ffffff;
+    }
+    
+    .tab-content {
+      display: none;
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .comment-item {
+      background-color: #f9f9f9;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid #7844e8;
+      border-radius: 4px;
+    }
+    
+    .comment-item strong {
+      color: #7844e8;
+    }
+    
+    .comment-item p {
+      margin: 10px 0;
+      color: #2e2e2e;
+    }
+    
+    .comment-item small {
+      color: #999;
+    }
+    
+    .delete-btn {
+      background-color: #ff6b6b;
+      padding: 8px 15px;
+      margin-top: 10px;
+      font-size: 14px;
+      width: auto;
+    }
+    
+    .delete-btn:hover {
+      background-color: #ff5252;
+    }
+    
+    .log-item {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      border-left: 4px solid #7844e8;
+      font-size: 14px;
+    }
+    
+    .message {
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .logout-btn {
+      background-color: #999;
+      margin-top: 20px;
+    }
+    
+    .logout-btn:hover {
+      background-color: #777;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>관리자 페이지</h1>
+  </div>
+  
+  <div class="container">
+    <div class="login-section" id="loginSection">
+      <h2>관리자 로그인</h2>
+      <div class="form-group">
+        <label for="password">비밀번호:</label>
+        <input type="password" id="password" placeholder="관리자 비밀번호를 입력하세요">
+      </div>
+      <button onclick="login()">로그인</button>
+    </div>
+    
+    <div class="admin-panel" id="adminPanel">
+      <div class="message" id="message"></div>
+      
+      <div class="tabs">
+        <button class="tab-button active" onclick="switchTab('comments')">댓글 관리</button>
+        <button class="tab-button" onclick="switchTab('logs')">접속 로그</button>
+      </div>
+      
+      <div id="comments" class="tab-content active">
+        <h2>댓글 목록</h2>
+        <div id="commentsList"></div>
+      </div>
+      
+      <div id="logs" class="tab-content">
+        <h2>접속 로그</h2>
+        <div id="logsList"></div>
+      </div>
+      
+      <button class="logout-btn" onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+  
+  <script>
+    let adminPassword = '';
+    let currentTab = 'comments';
+    
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 3000);
+    }
+    
+    function login() {
+      const password = document.getElementById('password').value;
+      
+      if (!password) {
+        alert('비밀번호를 입력해주세요');
+        return;
+      }
+      
+      adminPassword = password;
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('adminPanel').style.display = 'block';
+      loadComments();
+      loadLogs();
+    }
+    
+    function logout() {
+      adminPassword = '';
+      document.getElementById('password').value = '';
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('adminPanel').style.display = 'none';
+    }
+    
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // 탭 버튼 활성화
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // 탭 콘텐츠 활성화
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      
+      if (tab === 'logs') {
+        loadLogs();
+      } else {
+        loadComments();
+      }
+    }
+    
+    function loadComments() {
+      fetch(`/api/admin/logs?password=${adminPassword}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const commentsList = document.getElementById('commentsList');
+            commentsList.innerHTML = '';
+            
+            if (data.comments.length === 0) {
+              commentsList.innerHTML = '<p>댓글이 없습니다</p>';
+              return;
+            }
+            
+            data.comments.forEach(comment => {
+              const div = document.createElement('div');
+              div.className = 'comment-item';
+              div.innerHTML = `
+                <strong>${comment.name}</strong> (ID: ${comment.id})
+                <p>${comment.content}</p>
+                <small>${comment.date}</small>
+                <button class="delete-btn" onclick="deleteComment(${comment.id})">삭제</button>
+              `;
+              commentsList.appendChild(div);
+            });
+          } else {
+            showMessage(data.message, 'error');
+            logout();
+          }
+        })
+        .catch(err => {
+          showMessage('오류: ' + err.message, 'error');
+        });
+    }
+    
+    function deleteComment(id) {
+      if (!confirm('이 댓글을 삭제하시겠습니까?')) {
+        return;
+      }
+      
+      fetch(`/api/comments/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            showMessage('댓글이 삭제되었습니다', 'success');
+            loadComments();
+          } else {
+            showMessage(data.message, 'error');
+          }
+        })
+        .catch(err => {
+          showMessage('오류: ' + err.message, 'error');
+        });
+    }
+    
+    function loadLogs() {
+      fetch(`/api/admin/logs?password=${adminPassword}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            const logsList = document.getElementById('logsList');
+            logsList.innerHTML = `<p><strong>총 댓글 수: ${data.commentCount}</strong></p><br>`;
+            
+            data.logs.forEach(log => {
+              const div = document.createElement('div');
+              div.className = 'log-item';
+              div.innerHTML = `
+                <strong>${log.timestamp}</strong><br>
+                ${log.method} ${log.path} | IP: ${log.ip}
+              `;
+              logsList.appendChild(div);
+            });
+          } else {
+            showMessage(data.message, 'error');
+            logout();
+          }
+        })
+        .catch(err => {
+          showMessage('오류: ' + err.message, 'error');
+        });
+    }
+  </script>
+</body>
+</html>
