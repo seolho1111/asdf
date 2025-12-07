@@ -40,7 +40,6 @@
       </p>
     </div>
     <div class="container">
-      <!-- 관리자 기능 제거됨 -->
       
       <h2 style="color: #2e2e2e; font-size: 20px">
         <br>
@@ -50,7 +49,7 @@
       <p>
     
            </p>      <p style="text-align: center;">        <a href="https://www.youtube.com/shorts/YEhDlkBl_D0" style="font-size: 32px; display: inline-block;">
-          최은숙
+          최은숙(씨발련)
         </a>
       </p>
       <div class="card" style="margin-top:20px;">
@@ -92,11 +91,26 @@
 
           // 관리자 기능 제거됨 (서버에서 관련 엔드포인트 제거됨)
 
-          // 댓글 로드
-          function loadComments(){
-            fetch('/api/comments').then(r=>r.json()).then(comments=>{
+          // 댓글 로드 (응답이 JSON이 아닐 때 친절하게 처리)
+          async function loadComments(){
+            try{
+              const res = await fetch('/api/comments');
+              const ct = res.headers.get('content-type') || '';
+              if(!res.ok){
+                const text = await res.text();
+                console.error('댓글 로드 실패:', res.status, text);
+                commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>';
+                return;
+              }
+              if(!ct.includes('application/json')){
+                const text = await res.text();
+                console.error('댓글 로드: JSON 아님, 응답:', text.slice(0,200));
+                commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>';
+                return;
+              }
+              const comments = await res.json();
               commentsList.innerHTML=''; if(!Array.isArray(comments)) return; comments.forEach(c=>{ const div=document.createElement('div'); div.className='comment'; div.innerHTML=`<strong style="color:#7844e8">${escapeHtml(c.name)}</strong><p style="margin:5px 0;color:#2e2e2e">${escapeHtml(c.content)}</p><small style="color:#999">${escapeHtml(c.date)}</small>`; commentsList.appendChild(div); });
-            }).catch(err=>{ console.error('댓글 로드 오류:',err); commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>'; });
+            }catch(err){ console.error('댓글 로드 오류:',err); commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>'; }
           }
 
           // 폼 제출
@@ -105,6 +119,19 @@
               e.preventDefault();
               try{
                 const res = await fetch('/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
+                const ct = res.headers.get('content-type') || '';
+                if(!res.ok){
+                  const text = await res.text();
+                  showAlert('오류: 서버 응답 실패');
+                  console.error('댓글 제출 실패:', res.status, text);
+                  return;
+                }
+                if(!ct.includes('application/json')){
+                  const text = await res.text();
+                  showAlert('오류: 서버가 JSON을 반환하지 않습니다');
+                  console.error('댓글 제출: JSON 아님, 응답:', text.slice(0,300));
+                  return;
+                }
                 const data = await res.json();
                 if(data.success){ showAlert('댓글이 등록되었습니다!'); nameInput.value=''; contentInput.value=''; loadComments(); }
                 else showAlert(data.message||'오류');
