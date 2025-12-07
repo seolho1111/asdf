@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: asdf-api
+    env: node
+    startCommand: npm start
+    buildCommand: npm install
+    plan: free
