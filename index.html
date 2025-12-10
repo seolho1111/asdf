@@ -75,24 +75,6 @@
     <div style="margin-top:30px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <h3 style="color:#2e2e2e;margin:0">댓글 목록</h3>
-      </div>
-      <div id="commentsList"></div>
-    </div>
-    <!-- Fixed bottom comment input -->
-    <div class="comment-fixed" aria-label="코멘트 입력 영역">
-      <div class="inner">
-        <h3 style="color:#2e2e2e;margin:0 0 8px 0">코멘트를 남겨주세요</h3>
-        <form id="commentForm" class="comment-form" style="display:flex;flex-direction:column;gap:10px;">
-          <input type="text" id="name" placeholder="이름" required>
-          <textarea id="content" placeholder="코멘트를 입력하세요" required style="min-height:90px;resize:vertical"></textarea>
-          <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
-            <div id="message" style="color:#7844e8"></div>
-            <button type="submit" class="btn">제출</button>
-          </div>
-        </form>
-      </div>
-    </div>
-    <!-- 상단 중복 문구 제거됨 -->
         <script>
         (function(){
           const API_BASE = 'https://asdf-1-9s27.onrender.com';
@@ -101,9 +83,6 @@
           const contentInput = document.getElementById('content');
           const messageDiv = document.getElementById('message');
           const commentsList = document.getElementById('commentsList');
-          const fixedBar = document.querySelector('.comment-fixed');
-          const bodyEl = document.querySelector('body.site-body');
-          
 
           function showAlert(msg){
             messageDiv.textContent = msg;
@@ -111,9 +90,6 @@
             setTimeout(()=> messageDiv.textContent = '', 3000);
           }
 
-          // 관리자 기능 제거됨 (서버에서 관련 엔드포인트 제거됨)
-
-          // 댓글 로드 (응답이 JSON이 아닐 때 친절하게 처리)
           async function loadComments(){
             try{
               const res = await fetch(API_BASE + '/api/comments');
@@ -137,11 +113,10 @@
                 const div=document.createElement('div');
                 div.className='comment';
                 div.setAttribute('data-id', String(c.id||''));
-                const delBtn = `<button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>`;
                 div.innerHTML=`
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                     <strong style="color:#7844e8">${escapeHtml(c.name)}</strong>
-                    ${delBtn}
+                    <button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>
                   </div>
                   <p style="margin:5px 0;color:#2e2e2e">${escapeHtml(c.content)}</p>
                   <small style="color:#999">${escapeHtml(c.date)}</small>
@@ -151,69 +126,83 @@
             }catch(err){ console.error('댓글 로드 오류:',err); commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>'; }
           }
 
-          // 폼 제출
           if(form){
             form.addEventListener('submit', async (e)=>{
               e.preventDefault();
               try{
-                const res = await fetch(API_BASE + '/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
-                try{
-                  const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), { method:'DELETE' });
-                if(data.success){ showAlert('댓글이 등록되었습니다!'); nameInput.value=''; contentInput.value=''; loadComments(); }
-                else showAlert(data.message||'오류');
+                const res = await fetch(API_BASE + '/api/comments',{
+                  method:'POST',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({name:nameInput.value,content:contentInput.value})
+                });
+                const ct = res.headers.get('content-type') || '';
+                if(!res.ok){
+                  const text = await res.text();
+                  showAlert('오류: 서버 응답 실패');
+                  console.error('댓글 제출 실패:', res.status, text);
+                  return;
+                }
+                if(!ct.includes('application/json')){
+                  const text = await res.text();
+                  showAlert('오류: 서버가 JSON을 반환하지 않습니다');
+                  console.error('댓글 제출: JSON 아님, 응답:', text.slice(0,300));
+                  return;
+                }
+                const data = await res.json();
+                if(data.success){
+                  showAlert('댓글이 등록되었습니다!');
+                  nameInput.value='';
+                  contentInput.value='';
+                  loadComments();
+                } else {
+                  showAlert(data.message||'오류');
+                }
               }catch(err){ showAlert('오류: '+err.message); }
             });
           }
 
-          // 안전한 HTML 이스케이프
-          function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[c]); }
-
-          // 초기 로드
-          loadComments();
-
-          // 댓글 삭제 처리 (이벤트 위임)
           commentsList.addEventListener('click', async (e)=>{
             const t = e.target;
             if(!(t && t.closest)) return;
             const btn = t.closest('.btn-delete');
             if(!btn) return;
             const id = btn.getAttribute('data-id');
-          
-                      body: JSON.stringify({ username, password })
-                    });
-                    const ct = res.headers.get('content-type')||'';
-                    if(!res.ok){
-                      const text = ct.includes('application/json') ? (await res.json()) : {};
-                      adminMsg.textContent = (text && text.message) ? text.message : '로그인 실패';
-                      return;
-                    }
-                    const data = ct.includes('application/json') ? await res.json() : {};
-                    if(!data || !data.success || !data.token){ adminMsg.textContent = '로그인 실패'; return; }
-                    // 로그인 성공 → 토큰 저장 및 관리자 모드 활성화
-                    adminToken = data.token;
-                    isAdmin = true;
-                    adminToggle.textContent = '관리자 모드 해제';
-                    showAlert('관리자 모드 활성화');
-                    closeAdminModal();
-                    loadComments();
-                  }catch(err){ adminMsg.textContent = '로그인 오류: '+err.message; }
-                }
+            if(!id) return;
+            if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
+            try{
+              const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), { method:'DELETE' });
+              const ct = res.headers.get('content-type')||'';
+              if(!res.ok){
+                const text = await res.text();
+                showAlert('삭제 실패');
+                console.error('삭제 실패:', res.status, text);
+                return;
+              }
+              const data = ct.includes('application/json') ? await res.json() : {};
+              if(data && data.success){
+                showAlert('댓글이 삭제되었습니다');
+                loadComments();
+              }else{
+                showAlert('삭제 실패');
+              }
+            }catch(err){
+              console.error('삭제 오류:', err);
+              showAlert('삭제 오류: '+err.message);
+            }
+          });
 
-                if(adminToggle){
-                  adminToggle.addEventListener('click', ()=>{
-                    if(!isAdmin){
-                      openAdminModal();
-                    }else{
-                      isAdmin = false;
-                      adminToken = '';
-                      adminToggle.textContent = '관리자 로그인';
-                      showAlert('관리자 모드 해제됨');
-                      loadComments();
-                    }
-                  });
-                }
-                if(adminCancel){ adminCancel.addEventListener('click', closeAdminModal); }
-                if(adminSubmit){ adminSubmit.addEventListener('click', loginAdmin); }
+          function escapeHtml(s){
+            return String(s||'').replace(/[&<>"']/g, c=>({
+              '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'
+            })[c]);
+          }
+
+          loadComments();
+        })();
+        </script>
+          // 초기 로드
+          loadComments();
+
     <div style="background-color: #2e2e2e; color: #ffffff; text-align: center;padding: 50px">
       <p>
         render 도메인을 통해 서버 운영중입니다 ㅣ도배시 서버 접속 막을게요
@@ -225,5 +214,5 @@
         (주)Cheeseball_United ㅣ 문의:010-5534-7351
       </p>
     </div>
-   </body>
-</html>
+     </body>
+     </html>
