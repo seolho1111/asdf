@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
     <head>
-     <title>테스트 화면</title>
+     <title>SahmYookWIKI</title>
      <meta charset="utf-8">
-    <meta name="description" content="서울삼육중학교 개 좆같네">
+    <meta name="description" content="삼육위키">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       /* Mobile-first responsive styles */
@@ -19,6 +19,10 @@
       .comment-form input,.comment-form textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
       .btn{display:inline-block;padding:12px 16px;background:var(--primary);color:#fff;border-radius:6px;border:none;cursor:pointer;font-weight:600}
       #commentsList .comment{background:#fff;padding:12px;border-radius:6px;margin-bottom:12px;border-left:4px solid var(--primary)}
+      /* Fixed bottom comment form */
+      .comment-fixed{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid #eee;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,0.06)}
+      .comment-fixed .inner{max-width:560px;margin:0 auto}
+      body.site-body{padding-bottom:180px} /* prevent overlap with fixed form */
       /* Admin modal adjustments */
       #adminModal .modal-inner{width:92%;max-width:600px;margin:40px auto;padding:20px}
       @media(min-width:720px){
@@ -34,9 +38,9 @@
      </head>
     <body class="site-body">
      <div class="hero">
-      <h1>시험을 앞둔 기분을 작성해주세요</h1>
+      <h1>선생님들의 아는 정보를 작성해주세요</h1>
       <p>
-        <span style="font-weight:700;">12월 7일 기준</span>
+        <span style="font-weight:700;">비공식 삼육위키입니다</span>
       </p>
     </div>
     <div class="container">
@@ -49,18 +53,10 @@
       <p>
     
            </p>      <p style="text-align: center;">        <a href="https://www.youtube.com/shorts/YEhDlkBl_D0" style="font-size: 32px; display: inline-block;">
-          ㅊㅇㅅ(ㅅㅂㄹ)
+          ㅊㅇㅅ TlqkftoRL
         </a>
       </p>
-      <div class="card" style="margin-top:30px;">
-        <h3 style="color: #2e2e2e;">코멘트를 남겨주세요</h3>
-        <form id="commentForm" class="comment-form" style="display:flex;flex-direction:column;gap:12px;">
-          <input type="text" id="name" placeholder="이름" required>
-          <textarea id="content" placeholder="코멘트를 입력하세요" required style="min-height:110px;resize:vertical"></textarea>
-          <button type="submit" class="btn">제출</button>
-        </form>
-        <div id="message" style="margin-top: 10px; color: #7844e8;"></div>
-      </div>
+      
       
     <div class="container" style="margin-top:30px">
       <div class="card" style="background:#fff;padding:16px;">
@@ -70,6 +66,20 @@
     <div style="margin-top:30px;">
       <h3 style="color:#2e2e2e">댓글 목록</h3>
       <div id="commentsList"></div>
+    </div>
+    <!-- Fixed bottom comment input -->
+    <div class="comment-fixed" aria-label="코멘트 입력 영역">
+      <div class="inner">
+        <h3 style="color:#2e2e2e;margin:0 0 8px 0">코멘트를 남겨주세요</h3>
+        <form id="commentForm" class="comment-form" style="display:flex;flex-direction:column;gap:10px;">
+          <input type="text" id="name" placeholder="이름" required>
+          <textarea id="content" placeholder="코멘트를 입력하세요" required style="min-height:90px;resize:vertical"></textarea>
+          <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px">
+            <div id="message" style="color:#7844e8"></div>
+            <button type="submit" class="btn">제출</button>
+          </div>
+        </form>
+      </div>
     </div>
     <!-- 상단 중복 문구 제거됨 -->
         <script>
@@ -155,18 +165,18 @@
     <div style="background-color: #7844e8; color: #ffffff;padding: 20px">
       <h2 style="text-align: center;">
         setter 안쓰고 만들었으니까
-        이상한 사람들한테 공유하지 말아주세요^^(안그럼 털림)
+        해킹 시도하지 말아주세요
       </h2>
     </div>
     <div style="background-color: #2e2e2e; color: #ffffff; text-align: center;padding: 50px">
       <p>
-        시험 끝나고 서버 닫습니다 ㅣ도배시 서버 접속 막을게요
+        render 도메인을 통해 서버 운영중입니다 ㅣ도배시 서버 접속 막을게요
       </p>
       <p>
-       하고싶은말 다 남기세요
+       토스뱅크 1908-9485-6032
       </p>
       <p>
-        (주)현대자동차그룹 ㅣ 문의:010-5534-7351
+        (주)Cheeseball_United ㅣ 문의:010-5534-7351
       </p>
     </div>
    </body>
