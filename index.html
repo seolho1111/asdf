@@ -19,6 +19,8 @@
       .comment-form input,.comment-form textarea{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit}
       .btn{display:inline-block;padding:12px 16px;background:var(--primary);color:#fff;border-radius:6px;border:none;cursor:pointer;font-weight:600}
       #commentsList .comment{background:#fff;padding:12px;border-radius:6px;margin-bottom:12px;border-left:4px solid var(--primary)}
+      .btn-delete{background:transparent;border:none;color:#d9363e;font-weight:600;cursor:pointer;padding:6px 8px;border-radius:4px}
+      .btn-delete:hover{background:#fff0f0}
       /* Fixed bottom comment form */
       .comment-fixed{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid #eee;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,0.06);z-index:1000}
       .comment-fixed .inner{max-width:560px;margin:0 auto}
@@ -123,7 +125,22 @@
                 return;
               }
               const comments = await res.json();
-              commentsList.innerHTML=''; if(!Array.isArray(comments)) return; comments.forEach(c=>{ const div=document.createElement('div'); div.className='comment'; div.innerHTML=`<strong style="color:#7844e8">${escapeHtml(c.name)}</strong><p style="margin:5px 0;color:#2e2e2e">${escapeHtml(c.content)}</p><small style="color:#999">${escapeHtml(c.date)}</small>`; commentsList.appendChild(div); });
+              commentsList.innerHTML='';
+              if(!Array.isArray(comments)) return;
+              comments.forEach(c=>{
+                const div=document.createElement('div');
+                div.className='comment';
+                div.setAttribute('data-id', String(c.id||''));
+                div.innerHTML=`
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+                    <strong style="color:#7844e8">${escapeHtml(c.name)}</strong>
+                    <button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>
+                  </div>
+                  <p style="margin:5px 0;color:#2e2e2e">${escapeHtml(c.content)}</p>
+                  <small style="color:#999">${escapeHtml(c.date)}</small>
+                `;
+                commentsList.appendChild(div);
+              });
             }catch(err){ console.error('댓글 로드 오류:',err); commentsList.innerHTML = '<p style="color:#ff0000;">댓글을 불러올 수 없습니다.</p>'; }
           }
 
@@ -159,6 +176,37 @@
           // 초기 로드
           loadComments();
 
+          // 댓글 삭제 처리 (이벤트 위임)
+          commentsList.addEventListener('click', async (e)=>{
+            const t = e.target;
+            if(!(t && t.closest)) return;
+            const btn = t.closest('.btn-delete');
+            if(!btn) return;
+            const id = btn.getAttribute('data-id');
+            if(!id) return;
+            if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
+            try{
+              const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), { method:'DELETE' });
+              const ct = res.headers.get('content-type')||'';
+              if(!res.ok){
+                const text = await res.text();
+                showAlert('삭제 실패');
+                console.error('삭제 실패:', res.status, text);
+                return;
+              }
+              const data = ct.includes('application/json') ? await res.json() : {};
+              if(data && data.success){
+                showAlert('댓글이 삭제되었습니다');
+                loadComments();
+              }else{
+                showAlert('삭제 실패');
+              }
+            }catch(err){
+              console.error('삭제 오류:', err);
+              showAlert('삭제 오류: '+err.message);
+            }
+          });
+
           // 고정 입력 폼 높이에 맞춰 하단 패딩 자동 조정
           function adjustBottomPadding(){
             if(!fixedBar || !bodyEl) return;
@@ -186,8 +234,6 @@
         해킹 시도하지 말아주세요
       </h2>
     </div>
-    <!-- Bottom spacer to ensure dark section is visible even with fixed form -->
-    <div aria-hidden="true" style="height: 140px; width: 100%;"></div>
     <div style="background-color: #2e2e2e; color: #ffffff; text-align: center;padding: 50px">
       <p>
         render 도메인을 통해 서버 운영중입니다 ㅣ도배시 서버 접속 막을게요
