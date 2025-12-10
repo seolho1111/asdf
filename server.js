@@ -37,6 +37,23 @@ app.post('/api/comments', (req, res) => {
   res.json({ success: true, comment: newComment });
 });
 
+// 관리자 로그인 (ID/비밀번호)
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body || {};
+  const ADMIN_USER = process.env.ADMIN_USER || '';
+  const ADMIN_PASS = process.env.ADMIN_PASS || '';
+  const ADMIN_TOKEN = process.env.ADMIN_TOKEN || '';
+
+  if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
+    return res.status(500).json({ success: false, message: '관리자 로그인이 구성되지 않았습니다' });
+  }
+  if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+    return res.status(403).json({ success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다' });
+  }
+  // 성공 시 토큰 반환 (기존 삭제 API와 호환)
+  return res.json({ success: true, token: ADMIN_TOKEN });
+});
+
 // 관리자 토큰 검증 공통 로직
 function getProvidedAdminToken(req) {
   const hdrRaw = req.header('x-admin-token');

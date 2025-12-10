@@ -33,6 +33,14 @@
         .container{padding:0}
         #adminModal .modal-inner{padding:30px}
       }
+      /* Admin login modal */
+      .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:none;z-index:2000}
+      .modal{position:fixed;left:0;right:0;top:10%;z-index:2001;display:none}
+      .modal-inner{background:#fff;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+      .modal-header{padding:16px 20px;border-bottom:1px solid #eee;font-weight:700;color:#2e2e2e}
+      .modal-body{padding:16px 20px}
+      .modal-actions{display:flex;justify-content:flex-end;gap:10px;padding:0 20px 16px}
+      .input{width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;margin-bottom:10px}
     </style>
     <meta property="og:title" content="SYMS TALK">
      <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -86,6 +94,22 @@
       </div>
     </div>
     <!-- 상단 중복 문구 제거됨 -->
+    <!-- Admin Login Modal -->
+    <div id="adminBackdrop" class="modal-backdrop" aria-hidden="true"></div>
+    <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+      <div class="modal-inner" style="width:92%;max-width:420px;margin:40px auto;">
+        <div class="modal-header" id="adminModalTitle">관리자 로그인</div>
+        <div class="modal-body">
+          <input type="text" id="adminUser" class="input" placeholder="아이디" autocomplete="username">
+          <input type="password" id="adminPass" class="input" placeholder="비밀번호" autocomplete="current-password">
+          <div id="adminMsg" style="color:#d9363e;min-height:20px"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="adminCancel" class="btn" style="background:#999">취소</button>
+          <button id="adminSubmit" class="btn">로그인</button>
+        </div>
+      </div>
+    </div>
         <script>
         (function(){
           const API_BASE = 'https://asdf-1-9s27.onrender.com';
@@ -96,6 +120,13 @@
           const commentsList = document.getElementById('commentsList');
           const fixedBar = document.querySelector('.comment-fixed');
           const bodyEl = document.querySelector('body.site-body');
+          const adminBackdrop = document.getElementById('adminBackdrop');
+          const adminModal = document.getElementById('adminModal');
+          const adminUser = document.getElementById('adminUser');
+          const adminPass = document.getElementById('adminPass');
+          const adminMsg = document.getElementById('adminMsg');
+          const adminCancel = document.getElementById('adminCancel');
+          const adminSubmit = document.getElementById('adminSubmit');
 
           let adminToken = '';
           let adminUser = '';
@@ -269,43 +300,62 @@
                 }
               }else{
                 isAdmin = false;
-                adminToken = '';
-                adminUser = '';
-                adminPass = '';
-                adminToggle.textContent = '관리자 로그인';
-                showAlert('관리자 모드 해제됨');
-                loadComments();
-              }
-            });
-          }
+                function openAdminModal(){
+                  adminMsg.textContent = '';
+                  adminUser.value = '';
+                  adminPass.value = '';
+                  adminBackdrop.style.display = 'block';
+                  adminModal.style.display = 'block';
+                }
+                function closeAdminModal(){
+                  adminBackdrop.style.display = 'none';
+                  adminModal.style.display = 'none';
+                }
 
-          // 고정 입력 폼 높이에 맞춰 하단 패딩 자동 조정
-          function adjustBottomPadding(){
-            if(!fixedBar || !bodyEl) return;
-            const h = fixedBar.offsetHeight || 0;
-            const extra = 40; // 시각적 여유
-            bodyEl.style.paddingBottom = (h + extra) + 'px';
-          }
-          window.addEventListener('resize', adjustBottomPadding, { passive: true });
-          const ro = new ResizeObserver(adjustBottomPadding);
-          if(fixedBar && typeof ResizeObserver !== 'undefined'){ ro.observe(fixedBar); }
-          // 폼 내용 변화로 높이가 달릴 수 있음
-          if(contentInput){ contentInput.addEventListener('input', adjustBottomPadding); }
-          // 초기 2프레임 후 안정화
-          requestAnimationFrame(()=> requestAnimationFrame(adjustBottomPadding));
-        })();
-        </script>
-    </div>
-    <div style="background-color: #f6f6fb; width: 550px;margin: 32px;margin: 0 auto">
-      
-      </p>
-    </div>
-    <div style="background-color: #7844e8; color: #ffffff;padding: 20px">
-      <h2 style="text-align: center;">
-        setter 안쓰고 만들었으니까
-        해킹 시도하지 말아주세요
-      </h2>
-    </div>
+                async function loginAdmin(){
+                  adminMsg.textContent = '';
+                  const username = adminUser.value.trim();
+                  const password = adminPass.value.trim();
+                  if(!username || !password){ adminMsg.textContent = '아이디/비밀번호를 입력하세요'; return; }
+                  try{
+                    const res = await fetch(API_BASE + '/api/admin/login', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username, password })
+                    });
+                    const ct = res.headers.get('content-type')||'';
+                    if(!res.ok){
+                      const text = ct.includes('application/json') ? (await res.json()) : {};
+                      adminMsg.textContent = (text && text.message) ? text.message : '로그인 실패';
+                      return;
+                    }
+                    const data = ct.includes('application/json') ? await res.json() : {};
+                    if(!data || !data.success || !data.token){ adminMsg.textContent = '로그인 실패'; return; }
+                    // 로그인 성공 → 토큰 저장 및 관리자 모드 활성화
+                    adminToken = data.token;
+                    isAdmin = true;
+                    adminToggle.textContent = '관리자 모드 해제';
+                    showAlert('관리자 모드 활성화');
+                    closeAdminModal();
+                    loadComments();
+                  }catch(err){ adminMsg.textContent = '로그인 오류: '+err.message; }
+                }
+
+                if(adminToggle){
+                  adminToggle.addEventListener('click', ()=>{
+                    if(!isAdmin){
+                      openAdminModal();
+                    }else{
+                      isAdmin = false;
+                      adminToken = '';
+                      adminToggle.textContent = '관리자 로그인';
+                      showAlert('관리자 모드 해제됨');
+                      loadComments();
+                    }
+                  });
+                }
+                if(adminCancel){ adminCancel.addEventListener('click', closeAdminModal); }
+                if(adminSubmit){ adminSubmit.addEventListener('click', loginAdmin); }
     <div style="background-color: #2e2e2e; color: #ffffff; text-align: center;padding: 50px">
       <p>
         render 도메인을 통해 서버 운영중입니다 ㅣ도배시 서버 접속 막을게요

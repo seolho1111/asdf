@@ -6,9 +6,13 @@ services:
     buildCommand: npm install
     plan: free
     envVars:
-      - key: ineverloved_u
+      - key: ADMIN_TOKEN
         sync: false
-         - key: ADMIN_USER
-           sync: false
-         - key: ADMIN_PASS
-           sync: false
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
