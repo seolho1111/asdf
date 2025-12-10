@@ -154,7 +154,7 @@
                 const res = await fetch(API_BASE + '/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
                 const ct = res.headers.get('content-type') || '';
 
-                
+
                 if(!res.ok){
                   const text = await res.text();
                   showAlert('오류: 서버 응답 실패');
