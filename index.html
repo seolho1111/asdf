@@ -3,7 +3,7 @@
     <head>
      <title>SMYS TALK</title>
      <meta charset="utf-8">
-    <meta name="description" content="삼육위키">
+    <meta name="description" content="대화공간">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
       /* Mobile-first responsive styles */
@@ -34,7 +34,7 @@
         #adminModal .modal-inner{padding:30px}
       }
     </style>
-    <meta property="og:title" content="ParkSeoJoon">
+    <meta property="og:title" content="SYMS TALK">
      <link rel="preconnect" href="https://fonts.googleapis.com">
      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&family=Poppins&display=swap" rel="stylesheet">
@@ -65,7 +65,10 @@
      
     </div>
     <div style="margin-top:30px;">
-      <h3 style="color:#2e2e2e">댓글 목록</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="color:#2e2e2e;margin:0">댓글 목록</h3>
+        <button id="adminToggle" type="button" class="btn" style="background:#2e2e2e;color:#fff;padding:8px 10px;font-size:12px">관리자 로그인</button>
+      </div>
       <div id="commentsList"></div>
     </div>
     <!-- Fixed bottom comment input -->
@@ -94,7 +97,7 @@
           const fixedBar = document.querySelector('.comment-fixed');
           const bodyEl = document.querySelector('body.site-body');
 
-          let adminPassword = '';
+          let adminToken = '';
           let isAdmin = false;
 
           function showAlert(msg){
@@ -129,10 +132,11 @@
                 const div=document.createElement('div');
                 div.className='comment';
                 div.setAttribute('data-id', String(c.id||''));
+                const delBtn = isAdmin ? `<button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>` : '';
                 div.innerHTML=`
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                     <strong style="color:#7844e8">${escapeHtml(c.name)}</strong>
-                    <button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>
+                    ${delBtn}
                   </div>
                   <p style="margin:5px 0;color:#2e2e2e">${escapeHtml(c.content)}</p>
                   <small style="color:#999">${escapeHtml(c.date)}</small>
@@ -184,7 +188,11 @@
             if(!id) return;
             if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
             try{
-              const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), { method:'DELETE' });
+              if(!isAdmin || !adminToken){ showAlert('관리자 권한이 필요합니다'); return; }
+              const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), {
+                method:'DELETE',
+                headers: { 'x-admin-token': adminToken }
+              });
               const ct = res.headers.get('content-type')||'';
               if(!res.ok){
                 const text = await res.text();
@@ -204,6 +212,29 @@
               showAlert('삭제 오류: '+err.message);
             }
           });
+
+          // 관리자 로그인/해제
+          const adminToggle = document.getElementById('adminToggle');
+          if(adminToggle){
+            adminToggle.addEventListener('click', ()=>{
+              if(!isAdmin){
+                const token = (prompt('관리자 토큰을 입력하세요')||'').trim();
+                if(token){
+                  adminToken = token;
+                  isAdmin = true;
+                  adminToggle.textContent = '관리자 모드 해제';
+                  showAlert('관리자 모드 활성화');
+                  loadComments();
+                }
+              }else{
+                isAdmin = false;
+                adminToken = '';
+                adminToggle.textContent = '관리자 로그인';
+                showAlert('관리자 모드 해제됨');
+                loadComments();
+              }
+            });
+          }
 
           // 고정 입력 폼 높이에 맞춰 하단 패딩 자동 조정
           function adjustBottomPadding(){

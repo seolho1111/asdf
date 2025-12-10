@@ -5,3 +5,6 @@ services:
     startCommand: npm start
     buildCommand: npm install
     plan: free
+    envVars:
+      - key: ADMIN_TOKEN
+        sync: false

@@ -37,8 +37,13 @@ app.post('/api/comments', (req, res) => {
   res.json({ success: true, comment: newComment });
 });
 
-// DELETE: 댓글 삭제 (id 기반)
+// DELETE: 댓글 삭제 (id 기반, 관리자 전용)
 app.delete('/api/comments/:id', (req, res) => {
+  const adminToken = req.header('x-admin-token');
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected || adminToken !== expected) {
+    return res.status(403).json({ success: false, message: '권한이 없습니다' });
+  }
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ success: false, message: '유효한 댓글 ID가 아닙니다' });
