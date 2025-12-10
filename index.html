@@ -22,10 +22,8 @@
       /* Fixed bottom comment form */
       .comment-fixed{position:fixed;left:0;right:0;bottom:0;background:#ffffff;border-top:1px solid #eee;padding:12px;box-shadow:0 -4px 16px rgba(0,0,0,0.06);z-index:1000}
       .comment-fixed .inner{max-width:560px;margin:0 auto}
-      body.site-body{padding-bottom:280px} /* prevent overlap with fixed form */
-      @media(min-width:720px){
-        body.site-body{padding-bottom:320px}
-      }
+      body.site-body{padding-bottom:280px} /* initial padding; will be adjusted via JS */
+      @media(min-width:720px){ body.site-body{padding-bottom:320px} }
       /* Admin modal adjustments */
       #adminModal .modal-inner{width:92%;max-width:600px;margin:40px auto;padding:20px}
       @media(min-width:720px){
@@ -93,6 +91,8 @@
           const contentInput = document.getElementById('content');
           const messageDiv = document.getElementById('message');
           const commentsList = document.getElementById('commentsList');
+          const fixedBar = document.querySelector('.comment-fixed');
+          const bodyEl = document.querySelector('body.site-body');
 
           let adminPassword = '';
           let isAdmin = false;
@@ -158,6 +158,21 @@
 
           // 초기 로드
           loadComments();
+
+          // 고정 입력 폼 높이에 맞춰 하단 패딩 자동 조정
+          function adjustBottomPadding(){
+            if(!fixedBar || !bodyEl) return;
+            const h = fixedBar.offsetHeight || 0;
+            const extra = 40; // 시각적 여유
+            bodyEl.style.paddingBottom = (h + extra) + 'px';
+          }
+          window.addEventListener('resize', adjustBottomPadding, { passive: true });
+          const ro = new ResizeObserver(adjustBottomPadding);
+          if(fixedBar && typeof ResizeObserver !== 'undefined'){ ro.observe(fixedBar); }
+          // 폼 내용 변화로 높이가 달릴 수 있음
+          if(contentInput){ contentInput.addEventListener('input', adjustBottomPadding); }
+          // 초기 2프레임 후 안정화
+          requestAnimationFrame(()=> requestAnimationFrame(adjustBottomPadding));
         })();
         </script>
     </div>
