@@ -98,6 +98,8 @@
           const bodyEl = document.querySelector('body.site-body');
 
           let adminToken = '';
+          let adminUser = '';
+          let adminPass = '';
           let isAdmin = false;
 
           function showAlert(msg){
@@ -191,14 +193,21 @@
             if(!id) return;
             if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
             try{
-              if(!isAdmin || !adminToken){ showAlert('관리자 권한이 필요합니다'); return; }
-              // 유니코드 토큰도 안전하게 전송되도록 Base64로 인코딩
-              const tokenB64 = (typeof btoa === 'function')
-                ? btoa(unescape(encodeURIComponent(adminToken)))
-                : adminToken; // 폴백
+              if(!isAdmin){ showAlert('관리자 권한이 필요합니다'); return; }
+              const headers = {};
+              if(adminToken){
+                headers['x-admin-token-b64'] = (typeof btoa === 'function')
+                  ? btoa(unescape(encodeURIComponent(adminToken)))
+                  : adminToken;
+              } else if(adminUser && adminPass){
+                headers['x-admin-user'] = adminUser;
+                headers['x-admin-pass-b64'] = (typeof btoa === 'function')
+                  ? btoa(unescape(encodeURIComponent(adminPass)))
+                  : adminPass;
+              }
               const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), {
                 method:'DELETE',
-                headers: { 'x-admin-token-b64': tokenB64 }
+                headers
               });
               const ct = res.headers.get('content-type')||'';
               if(!res.ok){
@@ -225,34 +234,44 @@
           if(adminToggle){
             adminToggle.addEventListener('click', async ()=>{
               if(!isAdmin){
-                const token = (prompt('관리자 토큰을 입력하세요')||'').trim();
-                if(!token) return;
-                try{
-                  // 토큰 검증 요청 (Base64 인코딩)
-                  const tokenB64 = (typeof btoa === 'function')
-                    ? btoa(unescape(encodeURIComponent(token)))
-                    : token;
-                  const res = await fetch(API_BASE + '/api/admin/verify', {
-                    method: 'GET',
-                    headers: { 'x-admin-token-b64': tokenB64 }
-                  });
-                  if(!res.ok){
-                    showAlert('권한이 없습니다. 토큰을 확인하세요');
-                    return;
-                  }
-                  // 성공 시에만 관리자 모드 활성화
-                  adminToken = token;
-                  isAdmin = true;
-                  adminToggle.textContent = '관리자 모드 해제';
-                  showAlert('관리자 모드 활성화');
-                  loadComments();
-                }catch(err){
-                  console.error('토큰 검증 오류:', err);
-                  showAlert('토큰 검증 실패');
+                const mode = (prompt('관리자 로그인 방식 선택: token 또는 idpw')||'').trim().toLowerCase();
+                if(mode === 'token'){
+                  const token = (prompt('관리자 토큰을 입력하세요')||'').trim();
+                  if(!token) return;
+                  try{
+                    const tokenB64 = (typeof btoa === 'function')
+                      ? btoa(unescape(encodeURIComponent(token)))
+                      : token;
+                    const res = await fetch(API_BASE + '/api/admin/verify', {
+                      method: 'GET',
+                      headers: { 'x-admin-token-b64': tokenB64 }
+                    });
+                    if(!res.ok){ showAlert('권한이 없습니다. 토큰을 확인하세요'); return; }
+                    adminToken = token; adminUser=''; adminPass='';
+                    isAdmin = true; adminToggle.textContent = '관리자 모드 해제'; showAlert('관리자 모드 활성화'); loadComments();
+                  }catch(err){ console.error('토큰 검증 오류:', err); showAlert('토큰 검증 실패'); }
+                } else if(mode === 'idpw'){
+                  const user = (prompt('관리자 아이디를 입력하세요')||'').trim();
+                  const pass = (prompt('관리자 비밀번호를 입력하세요')||'').trim();
+                  if(!user || !pass) return;
+                  try{
+                    const res = await fetch(API_BASE + '/api/admin/login', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ username: user, password: pass })
+                    });
+                    if(!res.ok){ showAlert('권한이 없습니다. 아이디/비밀번호를 확인하세요'); return; }
+                    adminUser = user; adminPass = pass; adminToken='';
+                    isAdmin = true; adminToggle.textContent = '관리자 모드 해제'; showAlert('관리자 모드 활성화'); loadComments();
+                  }catch(err){ console.error('로그인 오류:', err); showAlert('로그인 실패'); }
+                } else {
+                  showAlert('지원하는 방식: token 또는 idpw');
                 }
               }else{
                 isAdmin = false;
                 adminToken = '';
+                adminUser = '';
+                adminPass = '';
                 adminToggle.textContent = '관리자 로그인';
                 showAlert('관리자 모드 해제됨');
                 loadComments();
