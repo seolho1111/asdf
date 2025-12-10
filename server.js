@@ -37,19 +37,36 @@ app.post('/api/comments', (req, res) => {
   res.json({ success: true, comment: newComment });
 });
 
+// 관리자 토큰 검증 공통 로직
+function getProvidedAdminToken(req) {
+  const hdrRaw = req.header('x-admin-token');
+  const hdrB64 = req.header('x-admin-token-b64');
+  if (hdrB64) {
+    try {
+      return Buffer.from(hdrB64, 'base64').toString('utf8');
+    } catch (e) {
+      return '__INVALID_B64__';
+    }
+  }
+  return hdrRaw || '';
+}
+
+// GET: 관리자 토큰 검증
+app.get('/api/admin/verify', (req, res) => {
+  const expected = process.env.ADMIN_TOKEN;
+  const provided = getProvidedAdminToken(req);
+  if (!expected || provided !== expected) {
+    return res.status(403).json({ success: false, message: '권한이 없습니다' });
+  }
+  return res.json({ success: true });
+});
+
 // DELETE: 댓글 삭제 (id 기반, 관리자 전용)
 app.delete('/api/comments/:id', (req, res) => {
   const expected = process.env.ADMIN_TOKEN;
-  const hdrRaw = req.header('x-admin-token');
-  const hdrB64 = req.header('x-admin-token-b64');
-
-  let provided = hdrRaw || '';
-  if (hdrB64) {
-    try {
-      provided = Buffer.from(hdrB64, 'base64').toString('utf8');
-    } catch (e) {
-      return res.status(400).json({ success: false, message: '잘못된 토큰 형식' });
-    }
+  const provided = getProvidedAdminToken(req);
+  if (provided === '__INVALID_B64__') {
+    return res.status(400).json({ success: false, message: '잘못된 토큰 형식' });
   }
 
   if (!expected || provided !== expected) {
