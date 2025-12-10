@@ -75,7 +75,6 @@
     <div style="margin-top:30px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <h3 style="color:#2e2e2e;margin:0">댓글 목록</h3>
-        <button id="adminToggle" type="button" class="btn" style="background:#2e2e2e;color:#fff;padding:8px 10px;font-size:12px">관리자 로그인</button>
       </div>
       <div id="commentsList"></div>
     </div>
@@ -94,22 +93,6 @@
       </div>
     </div>
     <!-- 상단 중복 문구 제거됨 -->
-    <!-- Admin Login Modal -->
-    <div id="adminBackdrop" class="modal-backdrop" aria-hidden="true"></div>
-    <div id="adminModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-      <div class="modal-inner" style="width:92%;max-width:420px;margin:40px auto;">
-        <div class="modal-header" id="adminModalTitle">관리자 로그인</div>
-        <div class="modal-body">
-          <input type="text" id="adminUser" class="input" placeholder="아이디" autocomplete="username">
-          <input type="password" id="adminPass" class="input" placeholder="비밀번호" autocomplete="current-password">
-          <div id="adminMsg" style="color:#d9363e;min-height:20px"></div>
-        </div>
-        <div class="modal-actions">
-          <button id="adminCancel" class="btn" style="background:#999">취소</button>
-          <button id="adminSubmit" class="btn">로그인</button>
-        </div>
-      </div>
-    </div>
         <script>
         (function(){
           const API_BASE = 'https://asdf-1-9s27.onrender.com';
@@ -120,18 +103,7 @@
           const commentsList = document.getElementById('commentsList');
           const fixedBar = document.querySelector('.comment-fixed');
           const bodyEl = document.querySelector('body.site-body');
-          const adminBackdrop = document.getElementById('adminBackdrop');
-          const adminModal = document.getElementById('adminModal');
-          const adminUser = document.getElementById('adminUser');
-          const adminPass = document.getElementById('adminPass');
-          const adminMsg = document.getElementById('adminMsg');
-          const adminCancel = document.getElementById('adminCancel');
-          const adminSubmit = document.getElementById('adminSubmit');
-
-          let adminToken = '';
-          let adminUser = '';
-          let adminPass = '';
-          let isAdmin = false;
+          
 
           function showAlert(msg){
             messageDiv.textContent = msg;
@@ -165,7 +137,7 @@
                 const div=document.createElement('div');
                 div.className='comment';
                 div.setAttribute('data-id', String(c.id||''));
-                const delBtn = isAdmin ? `<button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>` : '';
+                const delBtn = `<button type="button" class="btn-delete" data-id="${String(c.id||'')}">삭제</button>`;
                 div.innerHTML=`
                   <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
                     <strong style="color:#7844e8">${escapeHtml(c.name)}</strong>
@@ -185,23 +157,8 @@
               e.preventDefault();
               try{
                 const res = await fetch(API_BASE + '/api/comments',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nameInput.value,content:contentInput.value})});
-                const ct = res.headers.get('content-type') || '';
-
-
-                if(!res.ok){
-                  const text = await res.text();
-                  showAlert('오류: 서버 응답 실패');
-                  console.error('댓글 제출 실패:', res.status, text);
-                  return;
-                }
-                if(!ct.includes('application/json')){
-                  const text = await res.text();
-                  showAlert('오류: 서버가 JSON을 반환하지 않습니다');
-                  console.error('댓글 제출: JSON 아님, 응답:', text.slice(0,300));
-
-                  return;
-                }
-                const data = await res.json();
+                try{
+                  const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), { method:'DELETE' });
                 if(data.success){ showAlert('댓글이 등록되었습니다!'); nameInput.value=''; contentInput.value=''; loadComments(); }
                 else showAlert(data.message||'오류');
               }catch(err){ showAlert('오류: '+err.message); }
@@ -221,106 +178,7 @@
             const btn = t.closest('.btn-delete');
             if(!btn) return;
             const id = btn.getAttribute('data-id');
-            if(!id) return;
-            if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
-            try{
-              if(!isAdmin){ showAlert('관리자 권한이 필요합니다'); return; }
-              const headers = {};
-              if(adminToken){
-                headers['x-admin-token-b64'] = (typeof btoa === 'function')
-                  ? btoa(unescape(encodeURIComponent(adminToken)))
-                  : adminToken;
-              } else if(adminUser && adminPass){
-                headers['x-admin-user'] = adminUser;
-                headers['x-admin-pass-b64'] = (typeof btoa === 'function')
-                  ? btoa(unescape(encodeURIComponent(adminPass)))
-                  : adminPass;
-              }
-              const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), {
-                method:'DELETE',
-                headers
-              });
-              const ct = res.headers.get('content-type')||'';
-              if(!res.ok){
-                const text = await res.text();
-                showAlert('삭제 실패');
-                console.error('삭제 실패:', res.status, text);
-                return;
-              }
-              const data = ct.includes('application/json') ? await res.json() : {};
-              if(data && data.success){
-                showAlert('댓글이 삭제되었습니다');
-                loadComments();
-              }else{
-                showAlert('삭제 실패');
-              }
-            }catch(err){
-              console.error('삭제 오류:', err);
-              showAlert('삭제 오류: '+err.message);
-            }
-          });
-
-          // 관리자 로그인/해제
-          const adminToggle = document.getElementById('adminToggle');
-          if(adminToggle){
-            adminToggle.addEventListener('click', async ()=>{
-              if(!isAdmin){
-                const mode = (prompt('관리자 로그인 방식 선택: token 또는 idpw')||'').trim().toLowerCase();
-                if(mode === 'token'){
-                  const token = (prompt('관리자 토큰을 입력하세요')||'').trim();
-                  if(!token) return;
-                  try{
-                    const tokenB64 = (typeof btoa === 'function')
-                      ? btoa(unescape(encodeURIComponent(token)))
-                      : token;
-                    const res = await fetch(API_BASE + '/api/admin/verify', {
-                      method: 'GET',
-                      headers: { 'x-admin-token-b64': tokenB64 }
-                    });
-                    if(!res.ok){ showAlert('권한이 없습니다. 토큰을 확인하세요'); return; }
-                    adminToken = token; adminUser=''; adminPass='';
-                    isAdmin = true; adminToggle.textContent = '관리자 모드 해제'; showAlert('관리자 모드 활성화'); loadComments();
-                  }catch(err){ console.error('토큰 검증 오류:', err); showAlert('토큰 검증 실패'); }
-                } else if(mode === 'idpw'){
-                  const user = (prompt('관리자 아이디를 입력하세요')||'').trim();
-                  const pass = (prompt('관리자 비밀번호를 입력하세요')||'').trim();
-                  if(!user || !pass) return;
-                  try{
-                    const res = await fetch(API_BASE + '/api/admin/login', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ username: user, password: pass })
-                    });
-                    if(!res.ok){ showAlert('권한이 없습니다. 아이디/비밀번호를 확인하세요'); return; }
-                    adminUser = user; adminPass = pass; adminToken='';
-                    isAdmin = true; adminToggle.textContent = '관리자 모드 해제'; showAlert('관리자 모드 활성화'); loadComments();
-                  }catch(err){ console.error('로그인 오류:', err); showAlert('로그인 실패'); }
-                } else {
-                  showAlert('지원하는 방식: token 또는 idpw');
-                }
-              }else{
-                isAdmin = false;
-                function openAdminModal(){
-                  adminMsg.textContent = '';
-                  adminUser.value = '';
-                  adminPass.value = '';
-                  adminBackdrop.style.display = 'block';
-                  adminModal.style.display = 'block';
-                }
-                function closeAdminModal(){
-                  adminBackdrop.style.display = 'none';
-                  adminModal.style.display = 'none';
-                }
-
-                async function loginAdmin(){
-                  adminMsg.textContent = '';
-                  const username = adminUser.value.trim();
-                  const password = adminPass.value.trim();
-                  if(!username || !password){ adminMsg.textContent = '아이디/비밀번호를 입력하세요'; return; }
-                  try{
-                    const res = await fetch(API_BASE + '/api/admin/login', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+          
                       body: JSON.stringify({ username, password })
                     });
                     const ct = res.headers.get('content-type')||'';

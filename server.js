@@ -81,58 +81,8 @@ function getProvidedAdminCredentials(req) {
       pass = '__INVALID_B64__';
     }
   }
-  return { user, pass };
-}
-
-function isAdminByCredentials(req) {
-  const expectedUser = process.env.ADMIN_USER || '';
-  const expectedPass = process.env.ADMIN_PASS || '';
-  const { user, pass } = getProvidedAdminCredentials(req);
-  if (pass === '__INVALID_B64__') return false;
-  return !!expectedUser && !!expectedPass && user === expectedUser && pass === expectedPass;
-}
-
-// GET: 관리자 토큰 검증
-app.get('/api/admin/verify', (req, res) => {
-  const expected = process.env.ADMIN_TOKEN;
-  const provided = getProvidedAdminToken(req);
-  const byCreds = isAdminByCredentials(req);
-  if ((expected && provided === expected) || byCreds) {
-    return res.json({ success: true });
-  }
-    return res.status(403).json({ success: false, message: '권한이 없습니다' });
-});
-
-// POST: 관리자 로그인 (아이디/비밀번호)
-app.post('/api/admin/login', (req, res) => {
-  const expectedUser = process.env.ADMIN_USER || '';
-  const expectedPass = process.env.ADMIN_PASS || '';
-  const { username, password } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ success: false, message: '아이디와 비밀번호를 입력하세요' });
-  }
-  if (!!expectedUser && !!expectedPass && username === expectedUser && password === expectedPass) {
-    return res.json({ success: true });
-  }
-  return res.status(403).json({ success: false, message: '권한이 없습니다' });
-});
-
-// DELETE: 댓글 삭제 (id 기반, 관리자 전용)
-app.delete('/api/comments/:id', (req, res) => {
-  const expected = process.env.ADMIN_TOKEN;
-  const provided = getProvidedAdminToken(req);
-  if (provided === '__INVALID_B64__') {
-    return res.status(400).json({ success: false, message: '잘못된 토큰 형식' });
-  }
-  const byCreds = isAdminByCredentials(req);
-  if (!((expected && provided === expected) || byCreds)) {
-    return res.status(403).json({ success: false, message: '권한이 없습니다' });
-  }
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
-    return res.status(400).json({ success: false, message: '유효한 댓글 ID가 아닙니다' });
-  }
-
+  // DELETE: 댓글 삭제 (id 기반)
+  app.delete('/api/comments/:id', (req, res) => {
   const idx = comments.findIndex((c) => c.id === id);
   if (idx === -1) {
     return res.status(404).json({ success: false, message: '댓글을 찾을 수 없습니다' });
