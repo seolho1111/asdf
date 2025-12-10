@@ -189,9 +189,13 @@
             if(!confirm('이 댓글을 삭제하시겠습니까?')) return;
             try{
               if(!isAdmin || !adminToken){ showAlert('관리자 권한이 필요합니다'); return; }
+              // 유니코드 토큰도 안전하게 전송되도록 Base64로 인코딩
+              const tokenB64 = (typeof btoa === 'function')
+                ? btoa(unescape(encodeURIComponent(adminToken)))
+                : adminToken; // 폴백
               const res = await fetch(API_BASE + '/api/comments/' + encodeURIComponent(id), {
                 method:'DELETE',
-                headers: { 'x-admin-token': adminToken }
+                headers: { 'x-admin-token-b64': tokenB64 }
               });
               const ct = res.headers.get('content-type')||'';
               if(!res.ok){

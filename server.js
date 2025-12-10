@@ -39,9 +39,20 @@ app.post('/api/comments', (req, res) => {
 
 // DELETE: 댓글 삭제 (id 기반, 관리자 전용)
 app.delete('/api/comments/:id', (req, res) => {
-  const adminToken = req.header('x-admin-token');
   const expected = process.env.ADMIN_TOKEN;
-  if (!expected || adminToken !== expected) {
+  const hdrRaw = req.header('x-admin-token');
+  const hdrB64 = req.header('x-admin-token-b64');
+
+  let provided = hdrRaw || '';
+  if (hdrB64) {
+    try {
+      provided = Buffer.from(hdrB64, 'base64').toString('utf8');
+    } catch (e) {
+      return res.status(400).json({ success: false, message: '잘못된 토큰 형식' });
+    }
+  }
+
+  if (!expected || provided !== expected) {
     return res.status(403).json({ success: false, message: '권한이 없습니다' });
   }
   const id = Number(req.params.id);
