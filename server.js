@@ -37,7 +37,22 @@ app.post('/api/comments', (req, res) => {
   res.json({ success: true, comment: newComment });
 });
 
-// (관리자 전용 삭제/로그 API 제거됨)
+// DELETE: 댓글 삭제 (id 기반)
+app.delete('/api/comments/:id', (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: '유효한 댓글 ID가 아닙니다' });
+  }
+
+  const idx = comments.findIndex((c) => c.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, message: '댓글을 찾을 수 없습니다' });
+  }
+
+  const [deleted] = comments.splice(idx, 1);
+  // ID 재정렬은 하지 않음 (외부 참조 안정성 유지)
+  return res.json({ success: true, deleted });
+});
 
 // 서버 시작
 app.listen(PORT, () => {
